@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import get_settings
 from app.models.entities import Document, DocumentChunk
@@ -70,10 +70,14 @@ class IngestionService:
         raw_bytes: bytes,
     ) -> DocumentRead:
         content_hash = hashlib.sha256(raw_bytes).hexdigest()
-        existing = self.db.scalars(select(Document).where(Document.content_hash == content_hash)).first()
+        existing = self.db.scalars(
+            select(Document)
+            .where(Document.content_hash == content_hash)
+            .options(selectinload(Document.chunks))
+        ).first()
         if existing is not None:
             logger.info("Skipping duplicate document %s", existing.id)
-            self.db.refresh(existing)
+            self._reindex_existing_document(existing)
             return self.documents._to_document_read(existing)
 
         summary = self.llm.safe_summary(text)
@@ -134,6 +138,26 @@ class IngestionService:
         self.db.commit()
         self.db.refresh(document)
         return self.documents._to_document_read(document)
+
+    def _reindex_existing_document(self, document: Document) -> None:
+        if not document.chunks:
+            return
+
+        embeddings = self.llm.embed_texts([chunk.text for chunk in document.chunks])
+        self.chroma.add_chunks(
+            ids=[chunk.chroma_id for chunk in document.chunks],
+            texts=[chunk.text for chunk in document.chunks],
+            embeddings=embeddings,
+            metadatas=[
+                {
+                    "document_id": document.id,
+                    "document_title": document.title,
+                    "chunk_id": chunk.chroma_id,
+                    "chunk_index": chunk.chunk_index,
+                }
+                for chunk in document.chunks
+            ],
+        )
 
     def _chunk_text(self, text: str) -> list[dict]:
         if not text:

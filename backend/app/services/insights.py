@@ -21,7 +21,7 @@ class InsightService:
 
     def get_or_generate_insights(self) -> list[InsightRead]:
         insights = self.db.scalars(select(Insight).order_by(Insight.created_at.desc())).all()
-        if insights:
+        if insights and not self._should_regenerate(insights):
             return [self._to_schema(item) for item in insights]
 
         chunks = self.db.scalars(select(DocumentChunk).order_by(DocumentChunk.created_at.desc()).limit(20)).all()
@@ -34,6 +34,13 @@ class InsightService:
             self.db.add(item)
         self.db.commit()
         return [self._to_schema(item) for item in generated]
+
+    def _should_regenerate(self, insights: list[Insight]) -> bool:
+        if not insights:
+            return True
+        if self.llm.client is None:
+            return False
+        return any(item.title == "AI insights unavailable" for item in insights)
 
     def _generate_from_chunks(self, chunks: list[DocumentChunk]) -> list[Insight]:
         grouped_examples = defaultdict(list)
