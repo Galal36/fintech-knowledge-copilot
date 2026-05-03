@@ -1,2 +1,11 @@
+chromadb
 fastapi
+google-genai
+httpx
+pydantic-settings
+pypdf
+psycopg[binary]
+pytest
+python-multipart
+sqlalchemy
 uvicorn
