@@ -35,3 +35,5 @@ coverage/
 uploads/
 chroma_data/
 postgres_data/
+data/
+*.db
