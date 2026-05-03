@@ -24,8 +24,13 @@ class InsightService:
         if insights and not self._should_regenerate(insights):
             return [self._to_schema(item) for item in insights]
 
+        return self.refresh_insights()
+
+    def refresh_insights(self) -> list[InsightRead]:
         chunks = self.db.scalars(select(DocumentChunk).order_by(DocumentChunk.created_at.desc()).limit(20)).all()
         if not chunks:
+            self.db.execute(delete(Insight))
+            self.db.commit()
             return []
 
         generated = self._generate_from_chunks(chunks)

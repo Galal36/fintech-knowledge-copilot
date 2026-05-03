@@ -10,6 +10,7 @@ import {
   askQuestion,
   fetchDocuments,
   fetchInsights,
+  refreshInsights,
   uploadFile,
   type DocumentSummary,
   type Insight,
@@ -27,10 +28,11 @@ export default function CopilotDashboard() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [refreshingInsights, setRefreshingInsights] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: docs, mutate: mutateDocs } = useSWR<DocumentSummary[]>("/docs", fetchDocuments);
-  const { data: insights } = useSWR<Insight[]>("/insights", fetchInsights);
+  const { data: insights, mutate: mutateInsights } = useSWR<Insight[]>("/insights", fetchInsights);
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.length) {
@@ -41,6 +43,7 @@ export default function CopilotDashboard() {
     try {
       await uploadFile(event.target.files[0]);
       await mutateDocs();
+      await mutateInsights(await refreshInsights(), { revalidate: false });
     } catch (error) {
       console.error("Upload failed", error);
       alert("Failed to upload document.");
@@ -49,6 +52,18 @@ export default function CopilotDashboard() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleRefreshInsights = async () => {
+    setRefreshingInsights(true);
+    try {
+      await mutateInsights(await refreshInsights(), { revalidate: false });
+    } catch (error) {
+      console.error("Insight refresh failed", error);
+      alert("Failed to refresh insights.");
+    } finally {
+      setRefreshingInsights(false);
     }
   };
 
@@ -120,14 +135,27 @@ export default function CopilotDashboard() {
         </div>
 
         <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">
-            Latest Insights
-          </h3>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+              Latest Insights
+            </h3>
+            <button
+              type="button"
+              onClick={handleRefreshInsights}
+              disabled={refreshingInsights}
+              className="rounded-full border border-gray-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+            >
+              {refreshingInsights ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
           <div className="space-y-2 text-sm">
             {insights?.slice(0, 3).map((insight) => (
               <div key={insight.id} className="rounded bg-amber-50 p-3 text-amber-900">
                 <p className="font-medium">{insight.title}</p>
                 <p className="mt-1 line-clamp-3 text-xs text-amber-800">{insight.description}</p>
+                <p className="mt-2 text-[10px] uppercase tracking-wider text-amber-700">
+                  {new Date(insight.created_at).toLocaleString()}
+                </p>
               </div>
             ))}
             {!insights?.length && <p className="italic text-gray-400">Insights will appear after ingestion.</p>}

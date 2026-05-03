@@ -60,6 +60,11 @@ export const fetchInsights = async () => {
   return response.data as Insight[];
 };
 
+export const refreshInsights = async () => {
+  const response = await apiClient.post("/ai/insights/refresh");
+  return response.data as Insight[];
+};
+
 export const fetchDocuments = async () => {
   const response = await apiClient.get("/docs");
   return response.data as DocumentSummary[];

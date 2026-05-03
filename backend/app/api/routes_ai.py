@@ -55,3 +55,9 @@ def query_knowledge(
 def get_insights(db: Session = Depends(get_db)) -> list[InsightRead]:
     insight_service = InsightService(db)
     return insight_service.get_or_generate_insights()
+
+
+@router.post("/insights/refresh", response_model=list[InsightRead])
+def refresh_insights(db: Session = Depends(get_db)) -> list[InsightRead]:
+    insight_service = InsightService(db)
+    return insight_service.refresh_insights()
