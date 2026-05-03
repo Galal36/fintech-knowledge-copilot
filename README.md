@@ -101,3 +101,14 @@ pytest
 - No advanced reranker or hybrid BM25 layer
 
 Those are covered as next steps in `ARCHITECTURE.md`.
+
+## AI Assistance Disclosure
+
+AI tools were used as a support aid during implementation, debugging, and trade-off evaluation. The final code, architecture, and debugging decisions were reviewed and understood as part of the build process.
+
+Example prompts used during development:
+
+1. `Help me specifying the best stack to this project. I prefer to work using Django, as I have experience in it, but I guess the best option is FastAPI.`
+2. `I used to use validation and serializers in Django. What is the best option to use in FastAPI to validate?`
+3. `Which vector DB should I use to make the process faster, Chroma or Pinecone?`
+4. `The insights do not work and I suspect that the error comes from SQLAlchemy.`
