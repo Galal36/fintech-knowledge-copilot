@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-
-import { QueryProvider } from "@/components/query-provider";
-
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AI Knowledge Operations System",
-  description: "FinTech knowledge copilot for ingestion, retrieval, and proactive insights.",
+  description: "Knowledge ingestion, retrieval, and proactive insights dashboard.",
 };
 
 export default function RootLayout({
@@ -15,10 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <QueryProvider>{children}</QueryProvider>
-      </body>
+    <html lang="en" className="h-full">
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

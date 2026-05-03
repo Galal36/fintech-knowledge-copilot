@@ -1,118 +1,71 @@
-import type {
-  DocumentDetail,
-  DocumentSummary,
-  Insight,
-  QueryResponse,
-  SourceIngestPayload,
-} from "@/types/api";
+import axios from "axios";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8000/api";
 
-async function parseResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed with status ${response.status}`);
-  }
-  return response.json() as Promise<T>;
-}
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+});
 
-export async function getDocuments(): Promise<DocumentSummary[]> {
-  const response = await fetch(`${API_BASE_URL}/api/docs`, {
-    cache: "no-store",
-  });
-  return parseResponse<DocumentSummary[]>(response);
-}
+export type SourceReference = {
+  document_id: string;
+  document_title: string;
+  chunk_id: string;
+  chunk_index: number;
+  snippet: string;
+  score: number;
+};
 
-export async function getDocument(documentId: string): Promise<DocumentDetail> {
-  const response = await fetch(`${API_BASE_URL}/api/docs/${documentId}`, {
-    cache: "no-store",
-  });
-  return parseResponse<DocumentDetail>(response);
-}
+export type DocumentSummary = {
+  id: string;
+  title: string;
+  source_type: string;
+  file_name: string | null;
+  mime_type: string | null;
+  external_source_name: string | null;
+  status: string;
+  summary: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  chunk_count: number;
+};
 
-export async function ingestFiles(files: File[]): Promise<DocumentSummary[]> {
+export type Insight = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  confidence: number;
+  supporting_references: Record<string, unknown>[];
+  created_at: string;
+};
+
+export type QueryResult = {
+  answer: string;
+  sources: SourceReference[];
+  confidence: number;
+  reasoning?: string | null;
+};
+
+export const uploadFile = async (file: File) => {
   const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
-
-  const response = await fetch(`${API_BASE_URL}/api/ingest/files`, {
-    method: "POST",
-    body: formData,
+  formData.append("files", file);
+  const response = await apiClient.post("/ingest/files", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
-  return parseResponse<DocumentSummary[]>(response);
-}
+  return response.data as DocumentSummary[];
+};
 
-export async function ingestSource(payload: SourceIngestPayload): Promise<DocumentSummary> {
-  const response = await fetch(`${API_BASE_URL}/api/ingest/source`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  return parseResponse<DocumentSummary>(response);
-}
+export const fetchInsights = async () => {
+  const response = await apiClient.get("/ai/insights");
+  return response.data as Insight[];
+};
 
-export async function getInsights(): Promise<Insight[]> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/insights`, {
-    cache: "no-store",
-  });
-  return parseResponse<Insight[]>(response);
-}
+export const fetchDocuments = async () => {
+  const response = await apiClient.get("/docs");
+  return response.data as DocumentSummary[];
+};
 
-export async function queryKnowledge(
-  question: string,
-  options?: { onToken?: (token: string) => void },
-): Promise<QueryResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/ai/query?stream=true`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ question }),
-  });
-
-  if (!response.ok || !response.body) {
-    const text = await response.text();
-    throw new Error(text || "Streaming query failed.");
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let finalPayload: QueryResponse | null = null;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-
-    for (const line of lines) {
-      if (!line.trim()) {
-        continue;
-      }
-      const payload = JSON.parse(line) as
-        | { type: "token"; content: string }
-        | { type: "final"; payload: QueryResponse };
-
-      if (payload.type === "token") {
-        options?.onToken?.(payload.content);
-      }
-
-      if (payload.type === "final") {
-        finalPayload = payload.payload;
-      }
-    }
-  }
-
-  if (!finalPayload) {
-    throw new Error("The stream completed without a final query payload.");
-  }
-
-  return finalPayload;
-}
+export const askQuestion = async (question: string) => {
+  const response = await apiClient.post("/ai/query", { question });
+  return response.data as QueryResult;
+};
