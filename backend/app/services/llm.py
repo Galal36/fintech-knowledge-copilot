@@ -120,10 +120,21 @@ class GeminiService:
                 }
             ]
 
-        response = self.client.models.generate_content(
-            model=self.settings.gemini_generation_model,
-            contents=prompt,
-        )
+        try:
+            response = self.client.models.generate_content(
+                model=self.settings.gemini_generation_model,
+                contents=prompt,
+            )
+        except Exception:
+            logger.exception("Gemini insight generation failed; returning fallback")
+            return [
+                {
+                    "type": "summary",
+                    "title": "AI insights unavailable",
+                    "description": "Gemini could not generate insights right now. Try refreshing later.",
+                    "confidence": 0.35,
+                }
+            ]
         raw_text = response.text or "[]"
         cleaned = raw_text.replace("```json", "").replace("```", "").strip()
         try:

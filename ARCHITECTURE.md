@@ -43,7 +43,7 @@ For a same-day interview task, a modular monolith is the best trade-off:
 4. PostgreSQL resolves chunk metadata and document traceability.
 5. Gemini receives the question plus grounded context snippets.
 6. Backend returns answer, sources, confidence, and reasoning notes.
-7. Streaming mode emits incremental tokens for a better copilot UX.
+7. Streaming mode (`?stream=true`) emits incremental tokens over NDJSON. The current dashboard uses the non-streaming call.
 
 ### 3. Proactive Insights
 
@@ -100,7 +100,7 @@ The query endpoint supports streaming through `?stream=true` and returns newline
 - chunks are persisted and reused instead of reprocessing on each query
 - document metadata is kept in PostgreSQL for efficient listing and debugging
 - vector search stays in Chroma to keep retrieval simple and fast for the MVP
-- streaming answers reduce perceived latency in the frontend
+- the streaming endpoint is ready to reduce perceived latency once the frontend consumes it
 
 ## Trade-Offs
 

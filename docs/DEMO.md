@@ -4,12 +4,12 @@
 
 1. Start the system with `docker compose up --build`.
 2. Open `http://localhost:3000`.
-3. Upload one `.md` or `.txt` file from the Overview page.
-4. Ingest the simulated external source from the same page.
-5. Open Documents and inspect processed chunk previews.
-6. Open Copilot and ask a question about pricing, support issues, or decisions.
-7. Show the source panel and confidence note.
-8. Open Insights and walk through generated proactive cards.
+3. Upload one `.md` or `.txt` file from the dashboard (for example `docs/sample_knowledge.md`).
+4. Ingest a simulated external source with `POST /api/ingest/source` (Swagger UI at `http://localhost:8000/docs`).
+5. Check the Indexed Documents panel for the processed documents.
+6. Ask the copilot a question about pricing, support issues, or decisions.
+7. Show the cited sources and the confidence note under the answer.
+8. Refresh the Latest Insights panel and walk through the generated insight cards.
 
 ## Good Questions To Ask
 

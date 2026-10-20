@@ -1,19 +1,19 @@
 # FinTech Knowledge Copilot
 
-Production-quality MVP for the interview task "AI Knowledge Operations System". The project ingests files and simulated external knowledge, stores document metadata in PostgreSQL, stores semantic chunks in ChromaDB, answers grounded questions with cited sources, and surfaces proactive insights.
+MVP built for the interview task "AI Knowledge Operations System". The project ingests files and simulated external knowledge, stores document metadata in PostgreSQL, stores semantic chunks in ChromaDB, answers grounded questions with cited sources, and surfaces proactive insights.
 
 ## Stack
 
 - Backend: FastAPI, SQLAlchemy, PostgreSQL, ChromaDB
 - AI: Gemini API with deterministic fallbacks when no API key is present
-- Frontend: Next.js App Router, Tailwind CSS, React Query
+- Frontend: Next.js App Router, Tailwind CSS, SWR
 - Infra: Docker Compose
 
 ## Repository Structure
 
 ```text
 backend/             FastAPI app, models, services, tests
-frontend/            Next.js UI for upload, documents, copilot, and insights
+frontend/            Next.js single-page dashboard for upload, documents, copilot, and insights
 infra/               Alternate compose location for infrastructure setup
 docs/                Additional docs and sample notes
 docker-compose.yml   Root local orchestration entry point
@@ -29,7 +29,7 @@ ARCHITECTURE.md      System design and trade-offs
 - Store document metadata and chunk metadata in PostgreSQL
 - Store semantic vectors in ChromaDB
 - Query knowledge with grounded answers and cited sources
-- Stream answers to the frontend
+- Stream answers as NDJSON via `POST /api/ai/query?stream=true` (API only; the dashboard uses the non-streaming call)
 - Generate proactive insights from stored chunks
 - Browse documents and inspect chunk-level source material
 
@@ -71,12 +71,14 @@ docker compose up --build
 
 ## Suggested Demo Flow
 
-1. Upload a markdown or text document from the dashboard.
-2. Ingest a simulated Slack or Notion payload.
-3. Open the Documents page and inspect processed chunks.
-4. Ask a grounded question in the Copilot page.
-5. Review cited sources and confidence.
-6. Open the Insights page to show proactive summaries.
+Everything happens on the single dashboard page at `http://localhost:3000`:
+
+1. Upload a markdown or text document (for example `docs/sample_knowledge.md`).
+2. Ingest a simulated Slack or Notion payload through `POST /api/ingest/source` (see `docs/API.md`).
+3. Check the Indexed Documents panel for the processed document.
+4. Ask a grounded question in the copilot panel.
+5. Review the cited sources and the confidence score.
+6. Use Refresh in the Latest Insights panel to regenerate proactive insights.
 
 ## Backend Notes
 

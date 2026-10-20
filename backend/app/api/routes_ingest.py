@@ -8,8 +8,10 @@ from app.services.ingestion import IngestionService
 router = APIRouter(prefix="/api/ingest", tags=["ingestion"])
 
 
+# Sync handler on purpose: ingestion does blocking work (Gemini HTTP calls, Chroma,
+# SQLAlchemy), so FastAPI runs it in its threadpool instead of the event loop.
 @router.post("/files", response_model=list[DocumentRead])
-async def ingest_files(
+def ingest_files(
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
 ) -> list[DocumentRead]:
@@ -17,7 +19,7 @@ async def ingest_files(
     documents: list[DocumentRead] = []
 
     for upload in files:
-        content = await upload.read()
+        content = upload.file.read()
         try:
             documents.append(
                 service.ingest_file(
